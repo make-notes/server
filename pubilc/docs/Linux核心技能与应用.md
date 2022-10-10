@@ -396,3 +396,103 @@
   ```
   sort 排序 uniq去重
   ```
+
+### 进程和系统监测
+
+- Linux 多任务多用户操作系统
+  - Linux 可以管理多个同时运行的程序，是多任务系统
+  - Linux 也是一个多用户的系统
+  - 多个用户可以同时在不同地方通过网络链接到同一个 Linux 系统
+- 多用户多任务的隐患
+  - 可能某个用户或者某个任务(其实就是运行着的程序)
+  - 在某时让 Linux 系统过载
+- w 命令都有谁在做什么
+
+  - 查看系统中正在登录的用户
+
+  ```
+  [root@VM-12-6-centos ~]# w
+  15:38:33 up 39 days,  1:42,  2 users,  load average: 0.06, 0.05, 0.05
+  USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+  root     pts/0    113.89.32.127    10:34   41.00s  0.07s  0.05s -bash
+  root     pts/1    113.89.32.127    15:38    1.00s  0.02s  0.00s w
+  ```
+
+  pts/0 113.89.32.127 10:34 1.00s 0.03s 0.00s w
+
+  ```
+
+  - 11:02:33 up 38 days, 21:06, 1 user, load average: 0.00, 0.01, 0.05
+
+    - 11:02:33 系统执行命令的时间
+    - up 系统持续运行的时间，关机或重启时间会清零
+    - user 同时在线的用户数
+    - load average 负载平均值，分别表示 1、5、15 分钟之内的平均负载
+
+  - USER TTY FROM LOGIN@ IDLE JCPU PCPU WHAT
+    - USER 登录用户
+    - TTY 登录的终端名称
+    - FROM 用户连接到的服务器 IP 地址（或者主机名）
+    - LOGIN@ 用户连接系统的时间
+    - IDLE 用户多久没活跃（没运行任何命令）
+    - JCPU 该终端所有相关的进程使用的 CPU 时间。每当进程结束就停止计时，开始新的进程则会重新计时
+    - PCPU CPU 执行当前程序所消耗的时间，当前进程表示 WHAT 列里显示的程序
+    - WHAT 当下用户正运行的程序
+
+  ```
+
+- tload 绘制随时间变化的曲线图
+- who 正在登录的用户列表
+  ```
+  [root@VM-12-6-centos ~]# who
+  root     pts/0        2022-10-10 10:34 (113.89.32.127)
+  root     pts/1        2022-10-10 15:38 (113.89.32.127)
+  ```
+  <!--
+  - ps、top 列出运行的进程。
+    - 进程就是加载到内存中运行的程序，大多数程序运行时都只在内存中启动一个进程
+    -->
+- ps 显示当前系统中的进程
+  - 是 Process Status 的缩写，进程的静态列表
+  - 显示的进程列表不会随时间而更新，是静态的，只是运行 ps 命令当时的状态，是进程的快照
+    ```
+    [root@VM-12-6-centos ~]# ps
+      PID TTY          TIME CMD
+    12797 pts/1    00:00:00 bash
+    19697 pts/1    00:00:00 ps
+    ```
+    - PID 进程号
+    - TTY 登录的终端名称
+    - TIME 进程运行了多久
+    - CMD 产生进程的程序名
+  - -ef 列出所有用户在所有终端的所有进程
+    ```
+    UID        PID  PPID  C STIME TTY          TIME CMD
+    root         2     0  0 Sep01 ?        00:00:02 [kthreadd]
+    root         4     2  0 Sep01 ?        00:00:00 [kworker/0:0H]
+    root         6     2  0 Sep01 ?        00:00:52 [ksoftirqd/0]
+    ```
+    - UID 运行进程的用户。user identifier 的缩写
+    - PPID 程序的父进程号。parent process ID
+    - ps -ef | less 分页显示
+    - efH 按照乔木状列出进程
+    - -u username 列出此用户运行的进程
+    - -aux 通过 CPU 和内存是用来过滤进程
+      ```
+      [root@VM-12-6-centos ~]# ps -aux
+      USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+      root         2  0.0  0.0      0     0 ?        S    Sep01   0:02 [kthreadd]
+      root         4  0.0  0.0      0     0 ?        S<   Sep01   0:00 [kworker/0:0H]
+      root         6  0.0  0.0      0     0 ?        S    Sep01   0:53 [ksoftirqd/0]
+      root         7  0.0  0.0      0     0 ?        S    Sep01   0:12 [migration/0]
+      ```
+      - %CPU 处理器占用百分比
+      - %MEM 内存占用百分比
+      - STAT 进程状态
+      - START 启动时间
+      - COMMAND 进程名字
+      - ps -aux --sort -pcpu | less 根据 CPU 使用率来降序排列
+      - ps -aux --sort -pmem | less 根据 内存 使用率来降序排列
+      - ps -aux --sort -pcpu,+pmem | head 根据 CPU 和内存使用率来降序排列
+- pstree 以树形结构显示进程
+  - ps -axjf 和 pstree 效果类似
