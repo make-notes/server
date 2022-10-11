@@ -496,3 +496,29 @@
       - ps -aux --sort -pcpu,+pmem | head 根据 CPU 和内存使用率来降序排列
 - pstree 以树形结构显示进程
   - ps -axjf 和 pstree 效果类似
+
+### 进程操作和系统重启
+
+- top 进程的动态列表
+  - ps 很强大但是静态的，只能记录当下那一刻的进程列表。
+  - ps 不能实时监控系统进程
+  - q 退出 top
+  - h 帮助文档
+  - B 加粗某些信息
+  - f/F 在进程列表中添加或删除某些列；改变进程列表排序所参照的列
+    - 默认情况按照 %CPU 那一列来排序
+    - q 回到 top 主界面
+  - u 按照 user 显示
+  - k 结束某个进程
+  - s 改变刷新页面时间，默认每 3s 刷新一次
+- 其他与 top 功能类似的优秀软件 glances、htop
+- Ctrl + C 和 kill 停止进程
+  - Ctrl + C 停止终端中正在执行的程序
+  - kill + PID 结束一个进程，如果需要结束多个进程可用空格隔开
+    - kill -9 PID 立即强制结束进程
+  - killall + 程序名 结束多个进程，一个程序可能会启动多个进程
+- 终端中复制 Ctrl + Shift + C，粘贴 Ctrl + Shift + V 快捷键
+- halt 关闭系统
+- reboot 重启系统
+- shutdown 停止、关闭、重启系统
+- poweroff 关闭系统不需要 root 权限
