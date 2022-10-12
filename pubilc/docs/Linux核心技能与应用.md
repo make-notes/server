@@ -522,3 +522,40 @@
 - reboot 重启系统
 - shutdown 停止、关闭、重启系统
 - poweroff 关闭系统不需要 root 权限
+
+### 前后台进程灵活切换
+
+- 默认情况下，用户创建的进程都是前台进程。前台进程从键盘读取数据，并把处理结果输出到显示器
+- &符号和 nohup 命令：后台运行进程
+  - & 命令后面加&，后台进程与终端相关联，终端关闭或用户登出进程自动结束
+    ```
+    find / -name "*log" > output_find 2>&1 &
+    ```
+    - 查询以 log 结尾的文件，将标准输出和标准错误输出写入到 output 文件，并在后台执行。
+  - nohup 使进程与终端分离，终端关闭或用户登出进程不会结束
+    ```
+    nohup find / -name "*log" > output_find 2>&1
+    ```
+  - nohup 和&能同时使用
+    ```
+    nohup find / -name "*log" > output_find 2>&1 &
+    ```
+- Ctrl + Z, jobs, bg 和 fg 控制进程的前后台切换
+
+  - Ctrl + z 切换至后台，暂停运行并保存在后台。比如在 `grep -r 'log' / >grep_log 2>&1` 命令状态下按此组合切换到后台
+  - bg 使进程转到后台暂停。如果已经暂停在后台， bg 则将状态改为运行。
+    - 不加任何参数 bg 默认用于最近一个后台进程
+    - bg %id 作用于编号为 id 的后台进程，也可以不用%
+  - 通过 ps -aux 查看进程状态
+    | 状态码 | 英文 | 解释 | 说明 |
+    | :--: | :--: | :--: | :---: |
+    | R | runnable | 运行 | 正在运行或在运行队列中等待 |
+    | S | sleeping | 中断 | 休眠中，受阻。当某个条件形成后或接收到信号时，则脱离该状态 |
+    | D | uninterruptible sleep | 不可中断 | 进程不响应系统异步信号，即使 kill 也不能使其中断 |
+    | Z | a defunct ("zombie") process | 僵死 | 进程已终止，但进程描述符依然存在，直到父进程调用 wait4()系统函数后将进程释放 |
+    | T | traced or stopped | 停止 | 进程收到 SIGSTOP, SIGSTP, SIGTIN, SIGTOU 等停止信号后停止运行 |
+
+  - jobs 显示后台进程状态
+  - fg 将进程转为前台运行
+
+    ![任务流转流程图](../imgs/transition-state.jpg)
