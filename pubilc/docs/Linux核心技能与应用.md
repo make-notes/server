@@ -418,12 +418,8 @@
   root     pts/1    113.89.32.127    15:38    1.00s  0.02s  0.00s w
   ```
 
-  pts/0 113.89.32.127 10:34 1.00s 0.03s 0.00s w
-
   ```
-
   - 11:02:33 up 38 days, 21:06, 1 user, load average: 0.00, 0.01, 0.05
-
     - 11:02:33 系统执行命令的时间
     - up 系统持续运行的时间，关机或重启时间会清零
     - user 同时在线的用户数
@@ -438,7 +434,6 @@
     - JCPU 该终端所有相关的进程使用的 CPU 时间。每当进程结束就停止计时，开始新的进程则会重新计时
     - PCPU CPU 执行当前程序所消耗的时间，当前进程表示 WHAT 列里显示的程序
     - WHAT 当下用户正运行的程序
-
   ```
 
 - tload 绘制随时间变化的曲线图
@@ -559,3 +554,74 @@
   - fg 将进程转为前台运行
 
     ![任务流转流程图](../imgs/transition-state.jpg)
+
+### 任务的定时和延期
+
+- date 调节时间
+  - date "+%H" 输出小时
+  - date "+%H:%M:%S" 输出当前时分秒用:隔开
+  - date 时间。 修改系统时间。比如`date 10121430`将系统时间修改为 10 月 12 日 14 点 30 分
+- at 延时执行程序（类似于 setTimeout 只执行一次）
+  - at + 执行时间回车，在闪烁的光标中输入需要执行的程序回车，可以持续输入并回车设置多个程序，使用 Ctrl + D 退出。 at 会显示\<EOT\> 结束标识
+    ```
+    [root@VM-12-6-centos ~]# at 12:00
+    at> touch create_12
+    at> touch create_12_1
+    at> <EOT>
+    job 1 at Wed Oct 12 12:00:00 2022
+    ```
+    - 时间默认为当天，如果需要指定日期，格式为美国日期格式“月/日/年” `at 13:50 10/12/22`
+    - 指定距离当前多久执行程序
+    - at now +10 minutes 从此刻开始十分钟之后执行命令
+      | 关键词 | 意思 |
+      | :--: | :--: |
+      |minutes|分钟|
+      |hours|小时|
+      |days|天|
+      |weeks|星期|
+      |months|月|
+      |years|年|
+  - atq 列出正在等待执行的 at 任务
+  - atrm 删除正在等待执行的 at 任务
+- sleep 休息一会暂停指定时间，默认单位为秒。在两句命令之间插入一定的暂停等待时间，用分号隔开多个命令，使之一个接一个执行
+
+  ```
+  touch file.txt; sleep 10; rm file.txt
+  ```
+
+  | 关键词 | 意思 |
+  | :----: | :--: |
+  |   m    | 分钟 |
+  |   h    | 小时 |
+  |   d    |  天  |
+  |   w    | 星期 |
+  |   m    |  月  |
+  |   y    |  年  |
+
+  - &&、||、;。用于分割两个命令，使其依次执行
+    - &&。 && 前执行成功才能执行后面的命令
+    - ||。 || 前执行失败才会执行后面的命令
+    - ;。无论; 前执行成功与否都会执行后面的命令
+
+- crontab 定时执行程序（类似于 setInterval 循环执行）
+
+  - .bashrc 配置 crontab
+    - echo "export EDITOR=nano" >> ~/.bashrc 将文本编辑器设置为 nano（这个不是必须的操作）
+    - source ~/.bashrc 立即生效，不用重新登陆
+  - crontab 用于修改 crontab 文件，cron 用于实际执行定时的程序
+  - -i 显示 crontab 文件
+  - -e 修改 crontab 文件
+
+    - 编辑的格式 m h dom mon dow command，某项不设置可以用\*表示
+
+      - m: minute 分钟
+      - h: hour 小时
+      - dom: day of month 一个月的那一天
+      - mon: month 月份
+      - dow: day of week 星期几
+      - command: 需要执行的命令
+
+        ![任务流转流程图](../imgs/crontab.jpg)
+        ![crontab例子](../imgs/crontab-example.jpg)
+
+  - -r 删除 crontab 文件
