@@ -1,8 +1,10 @@
-#### 主流桌面管理器
+# Linux 核心技能与应用
+
+### 主流桌面管理器
 
 - Gnome、KDE、XFCE
 
-#### 命令行每行都会有的前缀意思
+### 命令行每行都会有的前缀意思
 
     [waldron@host220 ~]$
 
@@ -16,19 +18,19 @@
 - \# 表示超级用户，也就是 root(英语“根”的意思)
   - root 拥有所有权限
 
-#### 常见命令
+### 常见命令
 
 - sudo su 切换用户
 - 退出 root 身份回到普通用户 ctrl + d 或 exit 命令
 - whoami 查看当前用户
 - hostname 查看主机名称
 
-  #### date
+- date
 
   - date 是“日期”的意思，用于显示当前时间
   - CST 是 Central Standard Time 的缩写，表示“中央标准时间”
 
-  ### ls
+- ls
 
   - 查看当前目录的文件或文件夹
   - ls 是 list 的缩写。list 是“列举”，“列出”的意思
@@ -375,7 +377,7 @@
   sort -n << END
   ```
 - 将键盘输入的内容存入到文件  
-   ![将键盘输入的内容存入到文件](../imgs/input.jpg)
+   ![将键盘输入的内容存入到文件](../imgs/Linux核心技能与应用/input.jpg)
 
 管道
 
@@ -437,16 +439,13 @@
   ```
 
 - tload 绘制随时间变化的曲线图
+
 - who 正在登录的用户列表
   ```
   [root@VM-12-6-centos ~]# who
   root     pts/0        2022-10-10 10:34 (113.89.32.127)
   root     pts/1        2022-10-10 15:38 (113.89.32.127)
   ```
-  <!--
-  - ps、top 列出运行的进程。
-    - 进程就是加载到内存中运行的程序，大多数程序运行时都只在内存中启动一个进程
-    -->
 - ps 显示当前系统中的进程
   - 是 Process Status 的缩写，进程的静态列表
   - 显示的进程列表不会随时间而更新，是静态的，只是运行 ps 命令当时的状态，是进程的快照
@@ -553,7 +552,7 @@
   - jobs 显示后台进程状态
   - fg 将进程转为前台运行
 
-    ![任务流转流程图](../imgs/transition-state.jpg)
+    ![任务流转流程图](../imgs/Linux核心技能与应用/transition-state.jpg)
 
 ### 任务的定时和延期
 
@@ -621,7 +620,22 @@
       - dow: day of week 星期几
       - command: 需要执行的命令
 
-        ![任务流转流程图](../imgs/crontab.jpg)
-        ![crontab例子](../imgs/crontab-example.jpg)
+        ![任务流转流程图](../imgs/Linux核心技能与应用/crontab.jpg)
+        ![crontab例子](../imgs/Linux核心技能与应用/crontab-example.jpg)
 
   - -r 删除 crontab 文件
+
+### 文件的解压和压缩
+
+- 打包: 将多个文件变成一个总的文件 archive
+- 压缩: 将一个大文件通过某些压缩算法变成一个小文件
+- tar 与 gzip 和 zip2
+
+  - 使用 tar 将多个文件归档(archive)为一个总文件，然后用 gzip 或 bzip2 将 archive 压缩成更小的文件
+
+    ![归档压缩流程图](../imgs/Linux核心技能与应用/tar-zip.jpg)
+
+  - -cvf: 创建一个 tar 归档
+    ```
+    tar -cvf test.tar test
+    ```
