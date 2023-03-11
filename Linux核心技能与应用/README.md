@@ -377,7 +377,7 @@
   sort -n << END
   ```
 - 将键盘输入的内容存入到文件  
-   ![将键盘输入的内容存入到文件](../imgs/Linux核心技能与应用/input.jpg)
+   ![将键盘输入的内容存入到文件](./imgs/input.jpg)
 
 管道
 
@@ -552,7 +552,7 @@
   - jobs 显示后台进程状态
   - fg 将进程转为前台运行
 
-    ![任务流转流程图](../imgs/Linux核心技能与应用/transition-state.jpg)
+    ![任务流转流程图](./imgs/transition-state.jpg)
 
 ### 任务的定时和延期
 
@@ -620,8 +620,8 @@
       - dow: day of week 星期几
       - command: 需要执行的命令
 
-        ![任务流转流程图](../imgs/Linux核心技能与应用/crontab.jpg)
-        ![crontab例子](../imgs/Linux核心技能与应用/crontab-example.jpg)
+        ![任务流转流程图](./imgs/crontab.jpg)
+        ![crontab例子](./imgs/crontab-example.jpg)
 
   - -r 删除 crontab 文件
 
@@ -633,7 +633,7 @@
 
   - 使用 tar 将多个文件归档(archive)为一个总文件，然后用 gzip 或 bzip2 将 archive 压缩成更小的文件
 
-    ![归档压缩流程图](../imgs/Linux核心技能与应用/tar-zip.jpg)
+    ![归档压缩流程图](./imgs/tar-zip.jpg)
 
   - -cvf: 创建一个 tar 归档
     ```
