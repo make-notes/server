@@ -91,10 +91,13 @@
     ```
     启动镜像创建一个运行状态的容器
     ```
-    docker run -it [--name test_java] {docker.io/openjdk} bash
+    执行容器
     docker run -it [--name test_java] [-p 9000:8080 -p9001:8085] {docker.io/openjdk} bash
     docker run -it [--name test_java] [-v /home/project:/soft] [--privileged] {docker.io/openjdk} bash
-    
+
+    进入后台运行的容器
+    docker exec -it {test_java} {bash} 
+  
     -it 启动之后自动进入到docker环境中, exit 退出容器
     java 镜像名字
     bash 执行bash命令
@@ -168,7 +171,7 @@
         - 如果是在云服务环境中操作，创建之后无法链接则需要添加防火墙策略
         - 如果添加-p参数需要在创建网络时添加subnet ```docker network create [--subnet=172.18.0.0/24] {pxc-network}```否则会报address不存在
 
-    - 进入节点\
+    - 进入节点，建议至少创建3个节点否则可能会出现问题\
         docker exec -it node1 /usr/bin/mysql -uroot -p123456
 
     - 创建从节点
@@ -199,7 +202,39 @@
             pxc
           ```
 
-
-
     - 删除节点
         docker rm {node1}
+### 数据库负载均衡
+- 使用Haproxy做负载均衡，请求被均匀分发给每个节点，单节点负载低性能好
+![数据库负载均衡](./imgs/数据库负载均衡.png)
+![负载均衡各工具对比](./imgs/负载均衡各工具对比.png)
+- 安装Haproxy镜像```docker pull haproxy```
+    - 创建Haproxy配置文件```touch /home/soft/haproxy.cfg```[配置详情](./code/haproxy.cfg)
+- 创建Haproxy容器\
+在创建之前需要先将[配置文件](./code/haproxy.cfg)放到宿主机中。创建目录```mkdir /home/sort/haproxy -p```上传文件
+    ```
+    docker run -it -d \
+      -p 4001:8888 \
+      -p 4002:3306 \
+      -v /home/soft/haproxy:/usr/local/etc/haproxy \
+      --name haproxy1 \
+      --privileged \
+      --net=pxc-network \
+      haproxy
+
+    -p 4002:3306 haproxy对外提供3306负载均衡端口，3306已被宿主机占用于是映射到4002端口
+    -p 4001:8888 haproxy提供一个后台监控画面在配置文件中被定义为8888，映射到4001端口
+    --name 建议叫h1，后面会配置多节点
+    --net 和pxc处于同一网段
+    ```
+- 进入容器加载配置文件\
+  ```
+  docker exec -it {haproxy1} {bash}
+  haproxy -f /usr/local/etc/haproxy/haproxy.cfg
+  ```
+- 在mysql数据库中创建haproxy用户名```CREATE USER 'haproxy'@'%' IDENTIFIED BY ''```
+  - % 表示任何账号都可登陆
+  - BY '' 密码为空
+- 通过浏览器访问后台，ip为宿主机对外ip，端口、路径、账号密码都写在配置文件中。比如http://172.12.13.23:4001/dbs
+  ![Paproxy监控画面](./imgs/paproxy监控画面.png)
+- 通过数据库可视化软件链接至Haproxy数据库，对其进行增删改查也会影响到真实数据库。Haproxy数据库本身不存储任何内容，只是将请求均匀转发到真实数据库做处理，达到负载均衡效果。
