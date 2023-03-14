@@ -172,7 +172,7 @@
         - 如果添加-p参数需要在创建网络时添加subnet ```docker network create [--subnet=172.18.0.0/24] {pxc-network}```否则会报address不存在
 
     - 进入节点，建议至少创建3个节点否则可能会出现问题\
-        docker exec -it node1 /usr/bin/mysql -uroot -p123456
+        docker exec -it {pxc-node1} /usr/bin/mysql -uroot -p123456
 
     - 创建从节点
       - ```注意```:
@@ -211,7 +211,7 @@
 - 安装Haproxy镜像```docker pull haproxy```
     - 创建Haproxy配置文件```touch /home/soft/haproxy.cfg```[配置详情](./code/haproxy.cfg)
 - 创建Haproxy容器\
-在创建之前需要先将[配置文件](./code/haproxy.cfg)放到宿主机中。创建目录```mkdir /home/sort/haproxy -p```上传文件
+在创建之前需要先将[配置文件](./code/haproxy.cfg)放到宿主机中。创建目录```mkdir /home/soft/haproxy -p```上传文件
     ```
     docker run -it -d \
       -p 4001:8888 \
@@ -220,7 +220,8 @@
       --name haproxy1 \
       --privileged \
       --net=pxc-network \
-      haproxy
+      haproxy \
+      bash
 
     -p 4002:3306 haproxy对外提供3306负载均衡端口，3306已被宿主机占用于是映射到4002端口
     -p 4001:8888 haproxy提供一个后台监控画面在配置文件中被定义为8888，映射到4001端口
@@ -229,12 +230,152 @@
     ```
 - 进入容器加载配置文件\
   ```
-  docker exec -it {haproxy1} {bash}
+  docker exec -u 0 -it {haproxy1} {bash}
   haproxy -f /usr/local/etc/haproxy/haproxy.cfg
   ```
-- 在mysql数据库中创建haproxy用户名```CREATE USER 'haproxy'@'%' IDENTIFIED BY ''```
+  ```
+  可以通过多次-f实现haproxy多配置文件方案
+  -u 0 表示root用户不然会有权限问题
+  ```
+  ![由于haproxy权限导致的问题](./imgs/由于haproxy权限导致的问题.jpg)
+- 在pxc集群中的mysql数据库中创建haproxy用户名```CREATE USER 'haproxy'@'%' IDENTIFIED BY '';```
   - % 表示任何账号都可登陆
   - BY '' 密码为空
-- 通过浏览器访问后台，ip为宿主机对外ip，端口、路径、账号密码都写在配置文件中。比如http://172.12.13.23:4001/dbs
+- 通过浏览器访问后台，ip为宿主机对外ip，端口、路径、账号密码都写在配置文件中。比如http://175.178.234.238:4001/dbs
   ![Paproxy监控画面](./imgs/paproxy监控画面.png)
 - 通过数据库可视化软件链接至Haproxy数据库，对其进行增删改查也会影响到真实数据库。Haproxy数据库本身不存储任何内容，只是将请求均匀转发到真实数据库做处理，达到负载均衡效果。
+
+### 双机热备
+- 单节点Haproxy不具备高可用，必须要有冗余设计\
+    ![Haproxy冗余设计](./imgs/Haproxy冗余设计.jpg)
+- 双击热备依赖于虚拟IP\
+    ![虚拟IP](./imgs/虚拟IP.jpg)
+- 利用Keepalived实现双机热备\
+    ![Keepalived双机热备](./imgs/Keepalived双机热备.jpg)
+- 双机热备架构集群.
+    ![双机热备架构集群](./imgs/双机热备架构集群.jpg)
+- 安装Keepalived\
+Keepalived必须安装在Haproxy所在容器之内
+    ```
+    apt-get update
+    apt-get install keepalived
+    ```
+    ```
+    因为Haproxy是通过Ubuntu创建出来，所以使用apt-get而不是yum
+    建议通过apt-get加速方案安装，否则会很慢。
+    ```
+    ```
+    cp /etc/apt/sources.list \
+      /etc/apt/sources.list.bak \
+      && sed -i "s@http://deb.debian.org@http://mirrors.aliyun.com@g" \
+      /etc/apt/sources.list \
+      && rm -rf /var/lib/apt/lists/* \
+      && apt-get update
+    ```
+- Keepalived配置文件\
+Keepalived配置文件是/etc/keepalived/keepalived.conf
+  ```
+  如果在终端内编写配置文件需要安装vim
+  apt-get install vim
+  vim /etc/keepalived/keepalived.conf
+  ```
+- 启动Keepalived，宿主机可ping通虚拟IP ping 172.18.0.201
+  ```
+  service keepalived start
+  ```
+- 冷备份
+  - 冷备份是关闭数据库时候的备份方式，通常做法是拷贝数据文件
+  - 冷备份是最简单最安全的一种备份方式
+  - 大型网站无法做到关闭业务备份数据，所以冷备份不是最佳选择。但可以通过下线集群中的一个数据库备份数据，来达到不停服备份\
+  ![冷备份解决方案](./imgs/冷备份解决方案.jpg)
+- 热备份
+  - 热备份是在系统运行的状态下备份数据，也是难度最大的备份
+  - MySQL常见的热备份有LVM和XtraBackup两种方案
+  - 建议使用XtraBackup备份MySQL
+- XtraBackup介绍\
+XtraBackup是一款基于InnoDB的在线热备工具，具有开源免费，支持在线热备，占用磁盘空间小，能够非常快速地备份与恢复MySQL数据库。
+  - 优势
+    - XtraBackup备份过程不锁表、快速可靠
+    - XtraBackup备份过程不会打断正在执行的事务
+    - XtraBackup能够基于压缩等功能节约磁盘空间和流量
+  - 全量备份和增量备份
+    - 全量备份是备份全部数据。备份过程时间长，占用空间大
+    - 增量备份是只备份变化的那部分数据。备份时间段，占用空间小
+- 安装之前的准备工作\
+因为备份的数据在数据库所在的容器之内，当容器重启时数据会丢失。应该把备份的数据保存在宿主机上，通过docker卷映射。在宿主机上创建数据卷将其映射到某个节点上进行备份。
+  - 创建数据卷 ```docker volume create {backup}```
+  - 删除原有node1数据库重新创建
+    ```shell
+    docker run -d \
+        -p 3306:3306 \
+        -e XTRABACKUP_PASSWORD=123456 \
+        -e MYSQL_ROOT_PASSWORD=123456 \
+        -e CLUSTER_NAME=pxc-cluster \
+        -e CLUSTER_JOIN=pxc-node2 \
+        -v v1:/var/lib/mysql \
+        -v backup:/data \
+        --name=pxc-node1 \
+        --net=pxc-network \
+        --privileged \
+        --ip 172.18.0.2 \
+        pxc
+    ```
+  - XtraBackup安装在PXC容器中
+    - 全量热备份
+      ```shell
+      #进入node1容器
+      docker exec -it -u 0 {node1} bash
+      #更新软件包
+      apt-get update
+      #安装热备工具
+      apt-get install percona-xtrabackup-24
+      #全量热备
+      innobackupex --user=root --password=123456 /data/backup/full
+      ```
+    - 全量冷还原
+      - 数据库可以热备份，但是不能热还原。为了避免恢复过程中的数据同步，我们采用空白的MySQL还原数据，然后在建立PXC集群
+      - 还原数据前要将未提交的事务回滚，还原数据之后重启MySQL
+        ```shell
+        #删除数据
+        rm -rf /var/lib/mysql/*
+        #清空事务
+        innobackupex --user=root --password=123456 --apply-back /data/backup/full/2018-04-15_05-09-07/
+        #还原数据
+        innobackupex --user=root --password=123456 --copy-back  /data/backup/full/2018-04-15_05-09-07/
+        ```
+        ```shell
+        还原流程：
+        #停止所有节点
+        docker stop node1 node2...
+        #删除所有节点
+        docker rm node1 node2...
+        #删除所有数据卷
+        docker volume rm v1 v2...
+        #创建数据卷
+        docker volume create v1
+        #创建pxc容器
+        docker run -d \
+          -p 3306:3306 \
+          -e XTRABACKUP_PASSWORD=123456 \
+          -e MYSQL_ROOT_PASSWORD=123456 \
+          -e CLUSTER_NAME=pxc-cluster \
+          -v v1:/var/lib/mysql \
+          --name=pxc-node1 \
+          --net=pxc-network \
+          --privileged \
+          --ip 172.18.0.2 \
+          pxc
+        #进入容器
+        docker exec -it {node1} bash
+        #删除数据
+        rm -rf /var/lib/mysql/*
+        #清空没有回滚的事务
+        innobackupex --user=root --password=123456 --apply-back /data/backup/full/2018-04-15_05-09-07/
+        #还原数据
+        innobackupex --user=root --password=123456 --copy-back  /data/backup/full/2018-04-15_05-09-07/
+        #停止容器
+        docker stop {node1}
+        #重启容器
+        docker start {node1}
+        ```
+    - 增量备份与恢复请看pxc集群的其他视频
